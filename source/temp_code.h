@@ -41,18 +41,33 @@ typedef struct q
     char* args1;
     char* args2;
 }q;
-q q_table[1000];
-char* lable_table[100];
+
+int q_index=0;
+int stack_len=0;
+int block_level=0;
+int is_if=0;
+int func_index=0;
 int lab_index=0;
 int lab_id=0;
+int id_index=1;
+int num_number=0;
+int count_para=0;
+int temp_index=0;
+int temp_name=0;
+
+func_sy func_table[100];
+q q_table[10000];
+char* lable_table[100];
+id_sy id_table[100];
+temp_sy temp_table[1000];
+
 char* get_lab_name(){
     lable_table[lab_index]=(char*)malloc(sizeof(char)*10);
     memset(lable_table[lab_index],0,sizeof(char)*10);
     sprintf(lable_table[lab_index],".L%d",lab_id++);
     return lable_table[lab_index++];
 }
-int block_level=0;
-int is_if=0;
+
 void print_op(int op){
     switch (op)
     {
@@ -127,6 +142,7 @@ void print_op(int op){
         break;
     }
 }
+
 int get_size(char* a){
     if(a==NULL) return 0;
     int i=0;
@@ -135,8 +151,7 @@ int get_size(char* a){
     }
     return i;
 }
-int q_index=0;
-int stack_len=0;
+
 void print_glob();
 void print_q(){
     print_glob();
@@ -228,8 +243,7 @@ void print_q(){
         }
     }
 }
-func_sy func_table[1000];
-int func_index=0;
+
 int find_func(char* name,int size){
     int i;
     for(i=func_index-1;i>-1;i--){
@@ -240,8 +254,6 @@ int find_func(char* name,int size){
     return -1;
 }
 
-id_sy id_table[1000];
-int id_index=1;
 void print_id(){
     int i;
     for(i=0;i<id_index;i++){
@@ -249,6 +261,7 @@ void print_id(){
     }
     printf("\n");
 }
+
 int find_id(char* name,int size){
     int i;
     for(i=id_index-1;i>-1;i--){
@@ -258,31 +271,20 @@ int find_id(char* name,int size){
     }
     return -1;
 }
-int num_number=0;
-int count_para=0;
-temp_sy temp_table[1000];
-int temp_index=0;
-int temp_name=0;
-char* get_temp_name1(int n);
+
 char* get_temp_name(){
-    return get_temp_name1(100000);
-}
-char* get_temp_name_t(int n){
-    return get_temp_name1(n);
-}
-char* get_temp_name1(int n){
     int count=0;
     int i;
     if(temp_index==0){
-        char* t=(char*)malloc(sizeof(char)*100);
-        memset(t,0,100*sizeof(char));
+        char* t=(char*)malloc(sizeof(char)*4);
+        memset(t,0,4*sizeof(char));
         sprintf(t," %d",count);
         t[0]='r';
         return t;
     }
-    for(;count<n;count++){ 
-        char* t=(char*)malloc(sizeof(char)*100);
-        memset(t,0,100*sizeof(char));
+    for(;;count++){ 
+        char* t=(char*)malloc(sizeof(char)*4);
+        memset(t,0,4*sizeof(char));
         sprintf(t," %d",count);
         t[0]='r';
         bool ok=1;
@@ -290,10 +292,10 @@ char* get_temp_name1(int n){
             if(temp_table[i].name[0]=='r'){
                 int j;    
                 int c=0;           
-                for(j=0;j<100;j++){
+                for(j=0;j<4;j++){
                     if(t[j]==temp_table[i].name[j]) {c++;}
                 }
-                if(c==100){ok=0;}
+                if(c==4){ok=0;}
             }
         }
         if(ok) return t;
@@ -301,6 +303,7 @@ char* get_temp_name1(int n){
     }
     return NULL;
 }
+
 int find_temp(char* name,int size){
     int i;
     for(i=temp_index-1;i>-1;i--){
@@ -310,6 +313,7 @@ int find_temp(char* name,int size){
     }
     return -1;
 }
+
 void print_temp(){
     int i;
     if(temp_index==0) return;
@@ -318,6 +322,7 @@ void print_temp(){
     }
     printf("\n");
 }
+
 void print_glob(){
     int i;
     for(i=1;i<id_index;i++){
@@ -327,6 +332,7 @@ void print_glob(){
         printf("    .global %s\n",func_table[i].name);
     }
 }
+
 void temp_code(sync_node* n){
     if(n==NULL||n->empty) return;
     else{
@@ -474,8 +480,8 @@ void temp_code(sync_node* n){
                         if((i=find_id(n->child[0]->tk.id->data,n->child[0]->tk.id->data_size))!=-1){
                             temp_table[temp_index].name=get_temp_name();
                             q_table[q_index].re=temp_table[temp_index++].name;
-                            char* a=(char*)malloc(sizeof(char)*100);
-                            memset(a,0,sizeof(char)*100);
+                            char* a=(char*)malloc(sizeof(char)*10);
+                            memset(a,0,sizeof(char)*10);
                             sprintf(a,"[sp, #%d]",(stack_len-id_table[i].stack_index-1)*4);
                             q_table[q_index].args1=a;
                             q_table[q_index++].op=LOD;
@@ -532,8 +538,8 @@ void temp_code(sync_node* n){
                     }
                 }
                 if(n->index==1){
-                    char* a=(char*)malloc(sizeof(char)*100);
-                    memset(a,0,sizeof(char)*100);
+                    char* a=(char*)malloc(sizeof(char)*10);
+                    memset(a,0,sizeof(char)*10);
                     sprintf(a,"#%s",n->child[0]->tk.number->data);
                     temp_table[temp_index++].name=a;
                 }
@@ -848,8 +854,8 @@ void temp_code(sync_node* n){
                             temp_table[temp_index-1].name=q_table[q_index].re;
                             q_table[q_index++].op=MOV;      
                         }
-                        char* a=(char*)malloc(sizeof(char)*100);
-                        memset(a,0,sizeof(char)*100);
+                        char* a=(char*)malloc(sizeof(char)*10);
+                        memset(a,0,sizeof(char)*10);
                         sprintf(a,"[sp, #%d]",(stack_len-id_table[id_index-1].stack_index-1)*4);
                         q_table[q_index].re=a;
                         q_table[q_index].args1=temp_table[temp_index-1].name;
@@ -886,8 +892,8 @@ void temp_code(sync_node* n){
                             temp_table[temp_index-1].name=q_table[q_index].re;
                             q_table[q_index++].op=MOV;      
                         }
-                        char* a=(char*)malloc(sizeof(char)*100);
-                        memset(a,0,sizeof(char)*100);
+                        char* a=(char*)malloc(sizeof(char)*10);
+                        memset(a,0,sizeof(char)*10);
                         sprintf(a,"[sp, #%d]",(stack_len-id_table[id_index-1].stack_index-1)*4);
                         q_table[q_index].re=a;
                         q_table[q_index].args1=temp_table[temp_index-1].name;
@@ -923,12 +929,12 @@ void temp_code(sync_node* n){
                     q_table[q_index++].op=SUB;
                     stack_len++;
                     if(n->child[1]->empty){
-                        char* a=(char*)malloc(sizeof(char)*100);
+                        char* a=(char*)malloc(sizeof(char)*10);
                         char* ta=get_temp_name();
                         q_table[q_index].args1="#0";
                         q_table[q_index].re=ta;
                         q_table[q_index++].op=MOV;
-                        memset(a,0,sizeof(char)*100);
+                        memset(a,0,sizeof(char)*10);
                         sprintf(a,"[sp, #%d]",(stack_len-id_table[id_index-1].stack_index-1)*4);
                         q_table[q_index].args1=ta;
                         q_table[q_index].re=a;
@@ -942,8 +948,8 @@ void temp_code(sync_node* n){
                             temp_table[temp_index-1].name=q_table[q_index].re;
                             q_table[q_index++].op=MOV;      
                         }
-                        char* a=(char*)malloc(sizeof(char)*100);
-                        memset(a,0,sizeof(char)*100);
+                        char* a=(char*)malloc(sizeof(char)*10);
+                        memset(a,0,sizeof(char)*10);
                         sprintf(a,"[sp, #%d]",(stack_len-id_table[id_index-1].stack_index-1)*4);
                         q_table[q_index].re=a;
                         q_table[q_index].args1=temp_table[temp_index-1].name;
@@ -1059,12 +1065,12 @@ void temp_code(sync_node* n){
                         id_table[id_index].stack_index=stack_len++;
                         id_table[id_index].isconst=0;
                         id_table[id_index++].block_level=block_level;
-                        char* a=(char*)malloc(sizeof(char)*100);
+                        char* a=(char*)malloc(sizeof(char)*10);
                         char* ta=get_temp_name();
                         q_table[q_index].args1="#0";
                         q_table[q_index].re=ta;
                         q_table[q_index++].op=MOV;
-                        memset(a,0,sizeof(char)*100);
+                        memset(a,0,sizeof(char)*10);
                         sprintf(a,"[sp, #%d]",(stack_len-id_table[id_index-1].stack_index-1)*4);
                         q_table[q_index].args1=ta;
                         q_table[q_index].re=a;
@@ -1093,8 +1099,8 @@ void temp_code(sync_node* n){
                             q_table[q_index++].op=MOV;
                             
                         }
-                        char* a=(char*)malloc(sizeof(char)*100);
-                        memset(a,0,sizeof(char)*100);
+                        char* a=(char*)malloc(sizeof(char)*10);
+                        memset(a,0,sizeof(char)*10);
                         sprintf(a,"[sp, #%d]",(stack_len++-id_table[id_index-1].stack_index-1)*4);
                         q_table[q_index].args1=temp_table[temp_index-1].name;
                         q_table[q_index].re=a;
@@ -1146,8 +1152,8 @@ void temp_code(sync_node* n){
                     temp_index=t_temp;
                     int i;
                     if((i=find_id(n->child[0]->tk.id->data,n->child[0]->tk.id->data_size))!=-1&&!id_table[i].isconst){
-                        char* a=(char*)malloc(sizeof(char)*100);
-                        memset(a,0,sizeof(char)*100);
+                        char* a=(char*)malloc(sizeof(char)*10);
+                        memset(a,0,sizeof(char)*10);
                         sprintf(a,"[sp, #%d]",(stack_len-id_table[i].stack_index-1)*4);
                         q_table[q_index++].re=a;
                     }
