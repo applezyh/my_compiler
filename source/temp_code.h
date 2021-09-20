@@ -25,6 +25,8 @@ typedef struct id_sy
     bool isconst;
     int stack_index;
     int block_level;
+    bool isglob;
+    char* value;
 }id_sy;
 typedef struct temp_sy
 {
@@ -42,6 +44,7 @@ typedef struct q
     char* args2;
 }q;
 
+
 int q_index=0;
 int stack_len=0;
 int block_level=0;
@@ -54,7 +57,9 @@ int num_number=0;
 int count_para=0;
 int temp_index=0;
 int temp_name=0;
+int ret_index=0;
 
+int ret_link[100];
 func_sy func_table[100];
 q q_table[10000];
 char* lable_table[100];
@@ -66,6 +71,17 @@ char* get_lab_name(){
     memset(lable_table[lab_index],0,sizeof(char)*10);
     sprintf(lable_table[lab_index],".L%d",lab_id++);
     return lable_table[lab_index++];
+}
+
+int count_outvar(){
+    int i;
+    int count=0;
+    for(i=1;i<id_index;i++){
+        if(id_table[i].block_level<block_level){
+            count++;
+        }
+    }
+    return count;
 }
 
 void print_op(int op){
@@ -137,6 +153,12 @@ void print_op(int op){
     case STR:
         printf("str");
         break;
+    case MOVW:
+        printf("movw");
+        break;
+    case MOVT:
+        printf("movt");
+        break;
     default:
         printf("%d",op);
         break;
@@ -152,8 +174,11 @@ int get_size(char* a){
     return i;
 }
 
+void print_id();
 void print_glob();
 void print_q(){
+    print_id();
+    printf("\n");
     print_glob();
     int blank=0;
     int i;
@@ -209,7 +234,7 @@ void print_q(){
                 printf(" %s, %s\n",tq.re,tq.args1);
             }
         }
-        if(tq.op==MOV){
+        if(tq.op==MOV||tq.op==MOVT||tq.op==MOVW){
             print_op(tq.op);
             printf(" %s, %s\n",tq.re,tq.args1);
         }
@@ -256,8 +281,11 @@ int find_func(char* name,int size){
 
 void print_id(){
     int i;
-    for(i=0;i<id_index;i++){
-        printf("%s ",id_table[i].name);
+    printf(".section .data\n");
+    for(i=1;i<id_index;i++){
+        if(id_table[i].isglob){
+            printf("%s:\n    .word %s\n",id_table[i].name,(id_table[i].value)+1);
+        }
     }
     printf("\n");
 }
@@ -316,18 +344,20 @@ int find_temp(char* name,int size){
 
 void print_temp(){
     int i;
-    if(temp_index==0) return;
-    for(i=0;i<temp_index;i++){
-        printf("%s ",temp_table[i].name);
+    if(temp_index==0){
+        printf("%d",temp_index);
+    }
+    else{
+        printf("%d",temp_index);
+        for(i=0;i<temp_index;i++){
+            printf("%s ",temp_table[i].name);
+        }
     }
     printf("\n");
 }
 
 void print_glob(){
     int i;
-    for(i=1;i<id_index;i++){
-        printf("    .global %s\n",id_table[i].name);
-    }
     for(i=0;i<func_index;i++){
         printf("    .global %s\n",func_table[i].name);
     }
@@ -361,6 +391,13 @@ void temp_code(sync_node* n){
                     stack_len++;
                     temp_index--;
                     temp_code(n->child[1]->child[1]);
+                    if(temp_table[temp_index-1].name[0]!='r'){
+                        char* a=get_temp_name();
+                        q_table[q_index].args1=temp_table[temp_index-1].name;
+                        temp_table[temp_index-1].name=a;
+                        q_table[q_index].re=a;
+                        q_table[q_index++].op=MOV;
+                    }
                     char* a=get_temp_name();
                     q_table[q_index].re=a;
                     q_table[q_index++].op=POP;
@@ -388,6 +425,13 @@ void temp_code(sync_node* n){
                     stack_len++;
                     temp_index--;
                     temp_code(n->child[1]->child[1]);
+                    if(temp_table[temp_index-1].name[0]!='r'){
+                        char* a=get_temp_name();
+                        q_table[q_index].args1=temp_table[temp_index-1].name;
+                        temp_table[temp_index-1].name=a;
+                        q_table[q_index].re=a;
+                        q_table[q_index++].op=MOV;
+                    }
                     char* a=get_temp_name();
                     q_table[q_index].re=a;
                     q_table[q_index++].op=POP;
@@ -413,6 +457,13 @@ void temp_code(sync_node* n){
                     stack_len++;
                     temp_index--;
                     temp_code(n->child[2]->child[1]);
+                    if(temp_table[temp_index-1].name[0]!='r'){
+                        char* a=get_temp_name();
+                        q_table[q_index].args1=temp_table[temp_index-1].name;
+                        temp_table[temp_index-1].name=a;
+                        q_table[q_index].re=a;
+                        q_table[q_index++].op=MOV;
+                    }
                     char* a=get_temp_name();
                     q_table[q_index].re=a;
                     q_table[q_index++].op=POP;
@@ -438,6 +489,13 @@ void temp_code(sync_node* n){
                     stack_len++;
                     temp_index--;
                     temp_code(n->child[2]->child[1]);
+                    if(temp_table[temp_index-1].name[0]!='r'){
+                        char* a=get_temp_name();
+                        q_table[q_index].args1=temp_table[temp_index-1].name;
+                        temp_table[temp_index-1].name=a;
+                        q_table[q_index].re=a;
+                        q_table[q_index++].op=MOV;
+                    }
                     char* a=get_temp_name();
                     q_table[q_index].re=a;
                     q_table[q_index++].op=POP;
@@ -452,6 +510,7 @@ void temp_code(sync_node* n){
             case UNARYEXP:
                 if(n->child[0]->tk.attribute==ADD){
                     temp_code(n->child[1]);
+                    break;
                 }
                 if(n->child[0]->tk.attribute==SUB){
                     temp_code(n->child[1]);
@@ -470,24 +529,34 @@ void temp_code(sync_node* n){
                     q_table[q_index].args1=a;
                     q_table[q_index].args2=temp_table[temp_index-1].name;
                     q_table[q_index++].op=SUB;
+                    break;
                 }
                 if(n->index==3){
                     temp_code(n->child[1]);
+                    break;
                 }
                 if(n->index==2){
                     if(n->child[1]->empty){
                         int i;
                         if((i=find_id(n->child[0]->tk.id->data,n->child[0]->tk.id->data_size))!=-1){
-                            temp_table[temp_index].name=get_temp_name();
-                            q_table[q_index].re=temp_table[temp_index++].name;
-                            char* a=(char*)malloc(sizeof(char)*10);
-                            memset(a,0,sizeof(char)*10);
-                            sprintf(a,"[sp, #%d]",(stack_len-id_table[i].stack_index-1)*4);
-                            q_table[q_index].args1=a;
-                            q_table[q_index++].op=LOD;
+                            if(id_table[i].isglob){
+                                temp_table[temp_index].name=get_temp_name();
+                                q_table[q_index].re=temp_table[temp_index++].name;
+                                q_table[q_index].args1=n->child[0]->tk.id->data;
+                                q_table[q_index++].op=LOD;
+                            }
+                            else{
+                                temp_table[temp_index].name=get_temp_name();
+                                q_table[q_index].re=temp_table[temp_index++].name;
+                                char* a=(char*)malloc(sizeof(char)*10);
+                                memset(a,0,sizeof(char)*10);
+                                sprintf(a,"[sp, #%d]",(stack_len-id_table[i].stack_index-1)*4);
+                                q_table[q_index].args1=a;
+                                q_table[q_index++].op=LOD;
+                            }
                         }
                         else{
-                            
+                            printf("erro var %s not defined\n",n->child[0]->tk.id->data);
                         }
                     }
                     else{
@@ -515,14 +584,19 @@ void temp_code(sync_node* n){
                                     q_table[q_index++].op=POP;
                                     stack_len--;
                                 }
-                                q_table[q_index].re="sp";
-                                char* a=(char*)malloc(sizeof(char)*10);
-                                memset(a,0,sizeof(char)*10);
-                                sprintf(a,"#%d",count_para*4);
-                                q_table[q_index].args1="sp";
-                                q_table[q_index].args2=a;
-                                q_table[q_index++].op=ADD;
-                                stack_len-=count_para;
+                                else{
+                                    temp_index++;
+                                }
+                                if(count_para!=0){
+                                    q_table[q_index].re="sp";
+                                    char* a=(char*)malloc(sizeof(char)*10);
+                                    memset(a,0,sizeof(char)*10);
+                                    sprintf(a,"#%d",count_para*4);
+                                    q_table[q_index].args1="sp";
+                                    q_table[q_index].args2=a;
+                                    q_table[q_index++].op=ADD;
+                                    stack_len-=count_para;
+                                }
                                 count_para=0;
                                 for(i=0;i<temp_index-1;i++){
                                     if(temp_table[i].name[0]=='r'){
@@ -533,15 +607,29 @@ void temp_code(sync_node* n){
                                 }
                         }
                         else{
-
+                            printf("erro func %s not defined\n",n->child[0]->tk.id->data);
                         }
                     }
                 }
                 if(n->index==1){
                     char* a=(char*)malloc(sizeof(char)*10);
                     memset(a,0,sizeof(char)*10);
-                    sprintf(a,"#%s",n->child[0]->tk.number->data);
-                    temp_table[temp_index++].name=a;
+                    unsigned int t_number=(unsigned int)atoi(n->child[0]->tk.number->data);
+                    if((t_number>>16)>0){
+                        temp_table[temp_index].name=get_temp_name();
+                        q_table[q_index].re=temp_table[temp_index].name;
+                        q_table[q_index].args1=(char*)malloc(sizeof(char)*10);
+                        sprintf(q_table[q_index].args1,"#%d",(t_number<<16)>>16);
+                        q_table[q_index++].op=MOVW;
+                        q_table[q_index].re=temp_table[temp_index++].name;
+                        q_table[q_index].args1=(char*)malloc(sizeof(char)*10);
+                        sprintf(q_table[q_index].args1,"#%d",(t_number>>16));
+                        q_table[q_index++].op=MOVT;
+                    }
+                    else{
+                        sprintf(a,"#%s",n->child[0]->tk.number->data);
+                        temp_table[temp_index++].name=a;
+                    }
                 }
                 break;
             case FUNCRPARAM:
@@ -754,7 +842,7 @@ void temp_code(sync_node* n){
                         q_table[q_index++].args2=temp_table[temp_index-1].name;
                         temp_index-=2;
                         q_table[q_index].op=BGE;
-                        q_table[q_index++].args1=lable_table[lab_index-1];
+                        q_table[q_index++].args1=lable_table[lab_index-2];
                     }
                     else{
                         if(temp_table[temp_index-2].name[0]!='r'){
@@ -791,7 +879,7 @@ void temp_code(sync_node* n){
                         q_table[q_index++].args2=temp_table[temp_index-1].name;
                         temp_index-=2;
                         q_table[q_index].op=BGE;
-                        q_table[q_index++].args1=lable_table[lab_index-1];
+                        q_table[q_index++].args1=lable_table[lab_index-2];
                     }
                     else{
                         if(temp_table[temp_index-2].name[0]!='r'){
@@ -837,6 +925,29 @@ void temp_code(sync_node* n){
                 {
                     int i;
                     if((i=find_id(n->child[2]->tk.id->data,n->child[2]->tk.id->data_size))==-1||(id_table[i].block_level!=block_level)){
+                        if(block_level==0){
+                        id_table[id_index].name=n->child[2]->tk.id->data;
+                        id_table[id_index].name_size=n->child[2]->tk.id->data_size;
+                        id_table[id_index].isconst=0;
+                        id_table[id_index].isglob=1;
+                        id_table[id_index].block_level=block_level;
+                        id_table[id_index].value="#0";
+                        temp_index--;
+                        if(!n->child[4]->empty) {
+                            temp_code(n->child[4]);
+                            if(temp_table[temp_index-1].name[0]=='r'){
+                                printf("invaild initial value\n");
+                                return;
+                            }
+                            id_table[id_index].value=temp_table[temp_index-1].name;
+                        }
+                        else{
+                            printf("erro const value not have initial value\n");
+                        }
+                        id_index++;
+                        if(n->child[5]->child[0]->tk.type!=END) temp_code(n->child[5]);
+                        return;
+                    }
                         q_table[q_index].re="sp";
                         q_table[q_index].args1="sp";
                         q_table[q_index].args2="#4";
@@ -875,6 +986,29 @@ void temp_code(sync_node* n){
                 {
                     int i;
                     if((i=find_id(n->child[1]->tk.id->data,n->child[1]->tk.id->data_size))==-1||(id_table[i].block_level!=block_level)){
+                        if(block_level==0){
+                        id_table[id_index].name=n->child[1]->tk.id->data;
+                        id_table[id_index].name_size=n->child[1]->tk.id->data_size;
+                        id_table[id_index].isconst=0;
+                        id_table[id_index].isglob=1;
+                        id_table[id_index].block_level=block_level;
+                        id_table[id_index].value="#0";
+                        temp_index--;
+                        if(!n->child[3]->empty) {
+                            temp_code(n->child[3]);
+                            if(temp_table[temp_index-1].name[0]=='r'){
+                                printf("invaild initial value\n");
+                                return;
+                            }
+                            id_table[id_index].value=temp_table[temp_index-1].name;
+                        }
+                        else{
+                            printf("erro const value not have initial value\n");
+                        }
+                        id_index++;
+                        if(!n->child[4]->empty) temp_code(n->child[4]);
+                        return;
+                    }
                         q_table[q_index].re="sp";
                         q_table[q_index].args1="sp";
                         q_table[q_index].args2="#4";
@@ -918,6 +1052,26 @@ void temp_code(sync_node* n){
                 {
                     int i;
                 if((i=find_id(n->child[0]->tk.id->data,n->child[0]->tk.id->data_size))==-1||(id_table[i].block_level!=block_level)){
+                    if(block_level==0){
+                        id_table[id_index].name=n->child[0]->tk.id->data;
+                        id_table[id_index].name_size=n->child[0]->tk.id->data_size;
+                        id_table[id_index].isconst=0;
+                        id_table[id_index].isglob=1;
+                        id_table[id_index].block_level=block_level;
+                        id_table[id_index].value="#0";
+                        temp_index--;
+                        if(!n->child[1]->empty) {
+                            temp_code(n->child[1]);
+                            if(temp_table[temp_index-1].name[0]=='r'){
+                                printf("invaild initial value\n");
+                                return;
+                            }
+                            id_table[id_index].value=temp_table[temp_index-1].name;
+                        }
+                        id_index++;
+                        if(!n->child[2]->empty) temp_code(n->child[2]);
+                        return;
+                    }
                     id_table[id_index].name=n->child[0]->tk.id->data;
                     id_table[id_index].name_size=n->child[0]->tk.id->data_size;
                     id_table[id_index].stack_index=stack_len;
@@ -971,42 +1125,44 @@ void temp_code(sync_node* n){
                 if(n->index==6){
                     int t_len=stack_len;
                     if(find_func(n->child[1]->tk.id->data,n->child[1]->tk.id->data_size)==-1){
-                        stack_len=0;
                         func_table[func_index].name=n->child[1]->tk.id->data;
                         func_table[func_index].name_size=n->child[1]->tk.id->data_size;
                         func_table[func_index++].ret_type=VOID;   
                     }
                     if(!n->child[3]->empty){
                         if(n->child[5]->child[0]->tk.type!=END) {
-                            temp_code(n->child[3]);
-                            q_table[q_index].args1="lr";
-                            q_table[q_index++].op=PUSH;
-                            stack_len++;
+                            temp_code(n->child[3]);   
                             int t_stack_index=id_index;
                             q_table[q_index].args1=n->child[1]->tk.id->data;
                             q_table[q_index++].op=FUNC;
+                            q_table[q_index].args1="lr";
+                            q_table[q_index++].op=PUSH;
+                            ret_link[ret_index++]=stack_len;
+                            stack_len++;
                             int temp_t=temp_index;
                             temp_code(n->child[5]);
                             id_index=t_stack_index;
                             temp_index=temp_t;
+                            ret_index--;
                         }  
                     }
                     if(n->child[3]->empty){
                         if(n->child[5]->child[0]->tk.type!=END) {
-                            q_table[q_index].args1="lr";
-                            q_table[q_index++].op=PUSH;
-                            stack_len++;
                             int t_stack_index=id_index;
                             q_table[q_index].args1=n->child[1]->tk.id->data;
                             q_table[q_index++].op=FUNC;
+                            q_table[q_index].args1="lr";
+                            q_table[q_index++].op=PUSH;
+                            ret_link[ret_index++]=stack_len;
+                            stack_len++;
                             int temp_t=temp_index;
                             temp_code(n->child[5]);
                             id_index=t_stack_index;
                             temp_index=temp_t;
+                            ret_index--;
                         }  
                     }
-                    stack_len=t_len;
-                    
+                    stack_len=t_len;    
                 }
                 if(n->index==2){
                     temp_code(n->child[1]);
@@ -1037,7 +1193,6 @@ void temp_code(sync_node* n){
             case DECLPREFIX:
                 if(n->child[1]->child[0]->tk.type==LPARES){
                     int t_len=stack_len;
-                    stack_len=0;
                     func_table[func_index].name=n->child[0]->tk.id->data;
                     func_table[func_index].ret_type=INT;
                     func_table[func_index++].name_size=n->child[0]->tk.id->data_size;
@@ -1048,33 +1203,32 @@ void temp_code(sync_node* n){
                         q_table[q_index++].op=FUNC;
                         q_table[q_index].args1="lr";
                         q_table[q_index++].op=PUSH;
+                        ret_link[ret_index++]=stack_len;
                         stack_len++;
                         int temp_t=temp_index;
                         temp_code(n->child[1]->child[3]);
                         temp_index=temp_t;
                         id_index=t_stack_index; 
                         stack_len=t_len;
+                        ret_index--;
                     }
                     
                 }
                 if(n->child[1]->child[0]->tk.type==END){    
                     int i;
-                    if((i==find_id(n->child[0]->tk.id->data,n->child[0]->tk.id->data_size)==-1)||(id_table[i].block_level!=block_level)){
+                    if((i=find_id(n->child[0]->tk.id->data,n->child[0]->tk.id->data_size)==-1)||(id_table[i].block_level!=block_level)){
+                        if(temp_table[temp_index-1].name[0]=='r'){
+                            printf("invaild initial value\n");
+                            return;
+                        }
                         id_table[id_index].name=n->child[0]->tk.id->data;
                         id_table[id_index].name_size=n->child[0]->tk.id->data_size;
-                        id_table[id_index].stack_index=stack_len++;
                         id_table[id_index].isconst=0;
-                        id_table[id_index++].block_level=block_level;
-                        char* a=(char*)malloc(sizeof(char)*10);
-                        char* ta=get_temp_name();
-                        q_table[q_index].args1="#0";
-                        q_table[q_index].re=ta;
-                        q_table[q_index++].op=MOV;
-                        memset(a,0,sizeof(char)*10);
-                        sprintf(a,"[sp, #%d]",(stack_len-id_table[id_index-1].stack_index-1)*4);
-                        q_table[q_index].args1=ta;
-                        q_table[q_index].re=a;
-                        q_table[q_index++].op=STR;
+                        id_table[id_index].isglob=1;
+                        id_table[id_index].block_level=block_level;
+                        id_table[id_index++].value="#0";
+                        temp_index--;
+                        if(!n->child[1]->child[2]->empty) temp_code(n->child[1]->child[2]);
                     }
                     else{
                         printf("erro the var %s has already defined\n",n->child[0]->tk.id->data);
@@ -1085,26 +1239,18 @@ void temp_code(sync_node* n){
                 }
                 if(n->child[1]->child[0]->tk.attribute==ASSIGN){
                     int i;
-                    if((i==find_id(n->child[0]->tk.id->data,n->child[0]->tk.id->data_size)==-1)||(id_table[i].block_level!=block_level)){
+                    if((i=find_id(n->child[0]->tk.id->data,n->child[0]->tk.id->data_size)==-1)||(id_table[i].block_level!=block_level)){
                         temp_code(n->child[1]->child[1]);
+                        if(temp_table[temp_index-1].name[0]=='r'){
+                            printf("invaild initial value\n");
+                            return;
+                        }
                         id_table[id_index].name=n->child[0]->tk.id->data;
                         id_table[id_index].name_size=n->child[0]->tk.id->data_size;
-                        id_table[id_index].stack_index=stack_len;
                         id_table[id_index].isconst=0;
-                        id_table[id_index++].block_level=block_level;
-                        if(temp_table[temp_index-1].name[0]!='r'){
-                            q_table[q_index].re=get_temp_name();
-                            q_table[q_index].args1=temp_table[temp_index-1].name;
-                            temp_table[temp_index-1].name=q_table[q_index].re;
-                            q_table[q_index++].op=MOV;
-                            
-                        }
-                        char* a=(char*)malloc(sizeof(char)*10);
-                        memset(a,0,sizeof(char)*10);
-                        sprintf(a,"[sp, #%d]",(stack_len++-id_table[id_index-1].stack_index-1)*4);
-                        q_table[q_index].args1=temp_table[temp_index-1].name;
-                        q_table[q_index].re=a;
-                        q_table[q_index++].op=STR;
+                        id_table[id_index].isglob=1;
+                        id_table[id_index].block_level=block_level;
+                        id_table[id_index++].value=temp_table[temp_index-1].name;
                         temp_index--;
                         if(!n->child[1]->child[2]->empty) temp_code(n->child[1]->child[2]);
                     }
@@ -1122,21 +1268,26 @@ void temp_code(sync_node* n){
             case STMT:
                 if(n->child[0]->type==EXP){
                     temp_code(n->child[0]);
+                    temp_index--;
+                    break;
                 }
                 if(n->child[0]->tk.type==BREAK){
                     if(lab_index!=0&&lab_index-2*is_if-2>-1){
                         q_table[q_index].args1=lable_table[lab_index-2*is_if-2];
                         q_table[q_index++].op=JMP;
                     }
+                    break;
                 }
                 if(n->child[0]->tk.type==CONTINUE){
                     if(lab_index!=0&&lab_index-2*is_if-3>-1){
                         q_table[q_index].args1=lable_table[lab_index-2*is_if-3];
                         q_table[q_index++].op=JMP;
                     }
+                    break;
                 }
                 if(n->child[0]->type==BLOCK){
                     temp_code(n->child[0]);
+                    break;
                 }
                 if(n->child[0]->tk.type==ID&&n->child[1]->tk.attribute==ASSIGN){
                     temp_code(n->child[2]);
@@ -1147,26 +1298,35 @@ void temp_code(sync_node* n){
                         q_table[q_index].re=temp_table[temp_index-1].name;
                         q_table[q_index++].op=MOV;
                     }
-                    q_table[q_index].args1=temp_table[temp_index-1].name;
-                    q_table[q_index].op=STR;
-                    temp_index=t_temp;
                     int i;
                     if((i=find_id(n->child[0]->tk.id->data,n->child[0]->tk.id->data_size))!=-1&&!id_table[i].isconst){
-                        char* a=(char*)malloc(sizeof(char)*10);
-                        memset(a,0,sizeof(char)*10);
-                        sprintf(a,"[sp, #%d]",(stack_len-id_table[i].stack_index-1)*4);
-                        q_table[q_index++].re=a;
+                        if(id_table[i].isglob){
+                            q_table[q_index].args1=temp_table[temp_index-1].name;
+                            q_table[q_index].re=n->child[0]->tk.id->data;
+                            q_table[q_index++].op=STR;
+                        }
+                        else{
+                            q_table[q_index].args1=temp_table[temp_index-1].name;
+                            q_table[q_index].op=STR;
+                            temp_index=t_temp;
+                            char* a=(char*)malloc(sizeof(char)*10);
+                            memset(a,0,sizeof(char)*10);
+                            sprintf(a,"[sp, #%d]",(stack_len-id_table[i].stack_index-1)*4);
+                            q_table[q_index++].re=a;
+                        } 
                     }
                     else{
                         printf("erro the var %s not defined or the var is const\n",n->child[0]->tk.id->data);
                     }
                     temp_index--;
+                    break;
                 }
+                if(n->child[0]&&n->child[1]) 
                 if(n->child[0]->tk.type==RET&&n->child[1]->tk.type==END){
                     q_table[q_index].op=ADD;
                     char* a=(char*)malloc(sizeof(char)*10);
                     memset(a,0,sizeof(char)*10);
-                    sprintf(a,"#%d",(stack_len-1-num_of_para));
+                    sprintf(a,"#%d",(stack_len-ret_link[ret_index-1]-1)*4);
                     q_table[q_index].args2=a;
                     q_table[q_index].args1="sp";
                     q_table[q_index++].re="sp";
@@ -1178,7 +1338,8 @@ void temp_code(sync_node* n){
                     q_table[q_index].op=ADD;
                     char* a=(char*)malloc(sizeof(char)*10);
                     memset(a,0,sizeof(char)*10);
-                    sprintf(a,"#%d",(stack_len-1-num_of_para)*4);
+                    //printf("%d %d\n",stack_len,ret_link[ret_index-1]);
+                    sprintf(a,"#%d",(stack_len-ret_link[ret_index-1]-1)*4);
                     q_table[q_index].args2=a;
                     q_table[q_index].args1="sp";
                     q_table[q_index++].re="sp";
@@ -1244,6 +1405,7 @@ void temp_code(sync_node* n){
                 block_level--;
                 break;
             case BLOCKITEM:
+                
                 if(n->child[0]->type==DATADECL){
                     temp_code(n->child[0]);
                     if(!n->child[1]->empty) temp_code(n->child[1]);

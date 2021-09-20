@@ -84,6 +84,8 @@
 #define BGE 244
 #define BLE 245
 #define STR 246
+#define MOVW 247
+#define MOVT 248
 typedef struct token
 {
     /* data */

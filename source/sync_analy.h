@@ -12,6 +12,23 @@ void print_stack(sync_linktable* stack,char* start){
     printf("  %s\n",start);
     fflush(stdin);
 }
+
+void set_child(linknode* t,sync_linktable* stack,int type){
+    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
+    memset(t->node->child[t->node->index],0,sizeof(sync_node));
+    t->node->child[t->node->index]->type=type;
+    push(stack,t->node->child[t->node->index++]);
+}
+
+void set_child_TK(linknode* t,sync_linktable* stack,int type,int attribute){
+    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
+    memset(t->node->child[t->node->index],0,sizeof(sync_node));
+    t->node->child[t->node->index]->type=TOKEN;
+    t->node->child[t->node->index]->tk.type=type;
+    t->node->child[t->node->index]->tk.attribute=attribute;
+    push(stack,t->node->child[t->node->index++]);
+}
+
 sync_node* sync(char* start,char** end){
     char* ta;
     sync_node ttt;
@@ -24,7 +41,7 @@ sync_node* sync(char* start,char** end){
     push(&stack,n);
     top(&stack)->node->type=COMUNIT;
     int state=COMUNIT;
-    int i=100;
+    int i=10000;
     while(stack.num!=0&&i>0){
         //i--;
         while(*start==13||*start==32) start++;
@@ -56,10 +73,7 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).type==LPARES){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=ADDEXP;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,ADDEXP);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -73,14 +87,8 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).type==LPARES){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=ADDEXP1;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=MULEXP;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,ADDEXP1);
+                    set_child(t,&stack,MULEXP);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -91,19 +99,9 @@ sync_node* sync(char* start,char** end){
                 ){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    start=temp;
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=ADDEXP1;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=MULEXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
+                    set_child(t,&stack,ADDEXP1);
+                    set_child(t,&stack,MULEXP);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -135,14 +133,8 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).type==LPARES){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=MULEXP1;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=UNARYEXP;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,MULEXP1);
+                    set_child(t,&stack,UNARYEXP);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -154,19 +146,9 @@ sync_node* sync(char* start,char** end){
                 ){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=MULEXP1;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=UNARYEXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,MULEXP1);
+                    set_child(t,&stack,UNARYEXP);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -193,47 +175,25 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==LPARES){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=RPARES;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=EXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
+                    set_child_TK(t,&stack,RPARES,0);
+                    set_child(t,&stack,EXP);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
-                    start=temp;
                     break;
                 }
                 if(next(start,&temp,&tt).type==NUMBER){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==ID){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=IDPREFIX;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,IDPREFIX);                
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
                     break;
                 }
                 if(next(start,&temp,&tt).attribute==SUB
@@ -241,15 +201,8 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).attribute==NOT){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=UNARYEXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,UNARYEXP);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -258,20 +211,9 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==LPARES){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=RPARES;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=FUNCRPARAM;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,RPARES,0);
+                    set_child(t,&stack,FUNCRPARAM);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -306,14 +248,8 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).type==LPARES){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=FUNCRPREFIX;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=EXP;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,FUNCRPREFIX);
+                    set_child(t,&stack,EXP);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -321,16 +257,9 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==COMMA){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=FUNCRPARAM;
-                    push(&stack,t->node->child[t->node->index++]); 
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;  
+                    set_child(t,&stack,FUNCRPARAM);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
-                    start=temp;
                     break;
                 }
                 if(next(start,&temp,&tt).type==RPARES){
@@ -346,35 +275,17 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).type==LPARES){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=LOREXP;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,LOREXP);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).attribute==NOT){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=RPARES; 
-                    push(&stack,t->node->child[t->node->index++]);  
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=COND;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=LPARES;
-                    push(&stack,t->node->child[t->node->index++]); 
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk; 
-                    start=temp; 
+                    set_child_TK(t,&stack,RPARES,0);  
+                    set_child(t,&stack,COND);
+                    set_child_TK(t,&stack,LPARES,0);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -387,14 +298,8 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).type==LPARES){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=LOREXP1;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=LANDEXP;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,LOREXP1);
+                    set_child(t,&stack,LANDEXP);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -402,19 +307,9 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).attribute==OR){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=LOREXP1;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=LANDEXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,LOREXP1);
+                    set_child(t,&stack,LANDEXP);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -433,14 +328,8 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).type==LPARES){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=LANDEXP1;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=RELEXP;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,LANDEXP1);
+                    set_child(t,&stack,RELEXP);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -448,19 +337,9 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).attribute==AND){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=LANDEXP1;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=RELEXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,LANDEXP1);
+                    set_child(t,&stack,RELEXP);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -481,14 +360,8 @@ sync_node* sync(char* start,char** end){
                 ){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=RELEXP1;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=ADDEXP;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,RELEXP1);
+                    set_child(t,&stack,ADDEXP);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -501,15 +374,8 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).attribute==UEQL){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=ADDEXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,ADDEXP);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -517,20 +383,9 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==INT){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=END;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=IDARRY;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,END,0);
+                    set_child(t,&stack,IDARRY);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -538,19 +393,9 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==ID){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=IDARRYPREFIX;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=DATADECLPREFIX;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,IDARRYPREFIX);
+                    set_child(t,&stack,DATADECLPREFIX);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -559,15 +404,8 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==COMMA){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=IDARRY;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,IDARRY);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -581,35 +419,12 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==CONST){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=CONSTPREFIX;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=EXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=OP;
-                    t->node->child[t->node->index]->tk.attribute=ASSIGN;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=ID;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=INT;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,CONSTPREFIX);
+                    set_child(t,&stack,EXP);
+                    set_child_TK(t,&stack,OP,ASSIGN);
+                    set_child_TK(t,&stack,ID,0);
+                    set_child_TK(t,&stack,INT,0);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -617,40 +432,19 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==COMMA){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=CONSTPREFIX;
+                    set_child(t,&stack,CONSTPREFIX);
+                    set_child(t,&stack,EXP);
+                    set_child_TK(t,&stack,OP,ASSIGN);
+                    set_child_TK(t,&stack,ID,0);
                     push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=EXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.attribute=ASSIGN;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                     t->node->child[t->node->index]->tk.type=ID;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==END){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -658,15 +452,8 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).attribute==ASSIGN){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=EXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,EXP);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -680,20 +467,14 @@ sync_node* sync(char* start,char** end){
                  if(next(start,&temp,&tt).type==CONST){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=CONST_DECL;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,CONST_DECL);
                     state=top(&stack)->node->type;
                     break;
                  }
                  if(next(start,&temp,&tt).type==INT){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=VAR_DECL;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,VAR_DECL);
                     state=top(&stack)->node->type;
                     break;
                  }
@@ -701,58 +482,27 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==INT){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=DECLPREFIX;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,DECLPREFIX);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==VOID&&next(temp,&ta,&ttt).type==ID){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=VOIDDECLPREFIX;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=RPARES;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=PARA;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=LPARES;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=ttt.tk;
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=ta;
+                    set_child(t,&stack,VOIDDECLPREFIX);
+                    set_child_TK(t,&stack,RPARES,0);
+                    set_child(t,&stack,PARA);
+                    set_child_TK(t,&stack,LPARES,0);
+                    set_child_TK(t,&stack,ttt.tk.type,ttt.tk.attribute);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==CONST){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=CONST_DECL;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,CONST_DECL);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -760,21 +510,14 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==LBRACE){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=BLOCK;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,BLOCK);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==END){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -782,16 +525,8 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==ID){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=DECLPREPREFIX;
-                    push(&stack,t->node->child[t->node->index++]);
-                    state=top(&stack)->node->type;
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,DECLPREPREFIX);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -800,21 +535,14 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==LBRACE){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=BLOCK;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,BLOCK);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==END){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -823,103 +551,48 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==LPARES){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=DECLPREPREPREFIX;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=RPARES;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=PARA;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,DECLPREPREPREFIX);
+                    set_child_TK(t,&stack,RPARES,0);
+                    set_child(t,&stack,PARA);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).attribute==ASSIGN){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=END;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=IDARRYPREFIX;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=EXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,END,0);
+                    set_child(t,&stack,IDARRYPREFIX);
+                    set_child(t,&stack,EXP);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==COMMA){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=END;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=IDARRY;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,END,0);
+                    set_child(t,&stack,IDARRY);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==END){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
-                    start=temp;
                     break;
                 }
                 break;
             case PARA:
                 if(next(start,&temp,&tt).type==INT){
-                linknode* t= top(&stack);
-                pop(&stack);
-                t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                t->node->child[t->node->index]->type=PARAPREFIX;
-                push(&stack,t->node->child[t->node->index++]);
-                t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                t->node->child[t->node->index]->type=TOKEN;
-                t->node->child[t->node->index]->tk.type=ID;
-                push(&stack,t->node->child[t->node->index++]);
-                t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                t->node->child[t->node->index]->type=TOKEN;
-                t->node->child[t->node->index++]->tk=tt.tk;
-                start=temp;
-                state=top(&stack)->node->type;
-                break;
+                    linknode* t= top(&stack);
+                    pop(&stack);
+                    set_child(t,&stack,PARAPREFIX);
+                    set_child_TK(t,&stack,ID,0);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
+                    state=top(&stack)->node->type;
+                    break;
                 }
                 if(next(start,&temp,&tt).type==RPARES){
                     pop(&stack)->node->empty=1;
@@ -931,15 +604,8 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==COMMA){
                 linknode* t= top(&stack);
                 pop(&stack);
-                t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                t->node->child[t->node->index]->type=PARA;
-                push(&stack,t->node->child[t->node->index++]);
-                t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                t->node->child[t->node->index]->type=TOKEN;
-                t->node->child[t->node->index++]->tk=tt.tk;
-                start=temp;
+                set_child(t,&stack,PARA);
+                set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                 state=top(&stack)->node->type;
                 break;
                 }
@@ -953,58 +619,26 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==BREAK){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=END;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,END,0);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==CONTINUE){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=END;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,END,0);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==ID&&next(temp,&ta,&ttt).attribute==ASSIGN){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=END;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=EXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.attribute=ASSIGN;
-                    t->node->child[t->node->index]->tk.type=OP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,END,0);
+                    set_child(t,&stack,EXP);
+                    set_child_TK(t,&stack,OP,ASSIGN);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -1016,122 +650,55 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).type==LPARES){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=END;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=EXP;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child_TK(t,&stack,END,0);
+                    set_child(t,&stack,EXP);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==LBRACE){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=BLOCK;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,BLOCK);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==IF){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=IFPREFIX;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=STMT;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=RPARES;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=COND;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=LPARES;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,IFPREFIX);
+                    set_child(t,&stack,STMT);
+                    set_child_TK(t,&stack,RPARES,0);
+                    set_child(t,&stack,COND);
+                    set_child_TK(t,&stack,LPARES,0);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==WHILE){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=STMT;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=RPARES;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=COND;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=LPARES;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,STMT);
+                    set_child_TK(t,&stack,RPARES,0);
+                    set_child(t,&stack,COND);
+                    set_child_TK(t,&stack,LPARES,0);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==RET&&next(temp,&ta,&ttt).type==END){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=ttt.tk;
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=ta;
+                    set_child_TK(t,&stack,ttt.tk.type,ttt.tk.attribute);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
                 if(next(start,&temp,&tt).type==RET){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=END;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=EXP;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,END,0);
+                    set_child(t,&stack,EXP);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -1145,15 +712,8 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==ELSE){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=STMT;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child(t,&stack,STMT);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -1165,7 +725,8 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).type==IF
                 ||next(start,&temp,&tt).type==BREAK
                 ||next(start,&temp,&tt).type==CONTINUE
-                ||next(start,&temp,&tt).type==LBRACE){
+                ||next(start,&temp,&tt).type==LBRACE
+                ||next(start,&temp,&tt).type==RET){
                     pop(&stack)->node->empty=1;
                     state=top(&stack)->node->type;
                     break;
@@ -1174,20 +735,9 @@ sync_node* sync(char* start,char** end){
                 if(next(start,&temp,&tt).type==LBRACE){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index]->tk.type=RBRACE;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=BLOCKITEM;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=TOKEN;
-                    t->node->child[t->node->index++]->tk=tt.tk;
-                    start=temp;
+                    set_child_TK(t,&stack,RBRACE,0);
+                    set_child(t,&stack,BLOCKITEM);
+                    set_child_TK(t,&stack,tt.tk.type,tt.tk.attribute);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -1196,14 +746,8 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).type==CONST){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=BLOCKITEM;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=DATADECL;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,BLOCKITEM);
+                    set_child(t,&stack,DATADECL);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -1216,14 +760,8 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).type==BREAK){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=BLOCKITEM;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=STMT;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,BLOCKITEM);
+                    set_child(t,&stack,STMT);
                     state=top(&stack)->node->type;
                     break;
                 }
@@ -1239,14 +777,8 @@ sync_node* sync(char* start,char** end){
                 ||next(start,&temp,&tt).type==CONST){
                     linknode* t= top(&stack);
                     pop(&stack);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=COMUNIT;
-                    push(&stack,t->node->child[t->node->index++]);
-                    t->node->child[t->node->index]=(sync_node*)malloc(sizeof(sync_node));
-                    memset(t->node->child[t->node->index],0,sizeof(sync_node));
-                    t->node->child[t->node->index]->type=DECL;
-                    push(&stack,t->node->child[t->node->index++]);
+                    set_child(t,&stack,COMUNIT);
+                    set_child(t,&stack,DECL);
                     state=top(&stack)->node->type;
                     break;
                 }
