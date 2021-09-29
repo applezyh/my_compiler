@@ -1368,13 +1368,18 @@ void temp_code(sync_node* n){
                     is_if++;
                     char* a=get_lab_name();
                     char* b=get_lab_name();
+                    char* c=get_lab_name();
                     temp_code(n->child[2]);
                     q_table[q_index].op=LABLE;
                     q_table[q_index++].args1=b;
                     temp_code(n->child[4]);
+                    q_table[q_index].op=JMP;
+                    q_table[q_index++].args1=c;
                     q_table[q_index].op=LABLE;
                     q_table[q_index++].args1=a;
                     if(!n->child[5]->empty) temp_code(n->child[5]->child[1]);
+                    q_table[q_index].op=LABLE;
+                    q_table[q_index++].args1=c;
                     lab_index-=2;
                     is_if--;
                 }
