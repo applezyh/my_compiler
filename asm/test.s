@@ -1,64 +1,38 @@
 .section .data
-a:
-    .word 100
 
 
     .global print
     .global getint
     .global newline
-    .global f
     .global main
-f:
-    push {lr}
-    ldr r0, [sp, #4]
-    cmp r0, #1
-    beq .L2
-    ldr r0, [sp, #4]
-    cmp r0, #2
-    bne .L1
-.L1:
-    add sp, sp, #0
-    pop {r0}
-    mov r1, #1
-    push {r1}
-    mov pc, r0
-    b .L2
-.L0:
-    ldr r0, [sp, #4]
-    push {r0}
-    mov r1, #1
-    pop {r2}
-    sub r1, r2, r1
-    push {r1}
-    bl f
-    pop {r0}
-    add sp, sp, #4
-    push {r0}
-    ldr r0, [sp, #8]
-    push {r0}
-    mov r1, #2
-    pop {r2}
-    sub r1, r2, r1
-    push {r1}
-    bl f
-    pop {r0}
-    add sp, sp, #4
-    pop {r1}
-    add r0, r1, r0
-    add sp, sp, #0
-    pop {r1}
-    push {r0}
-    mov pc, r1
-.L2:
 main:
     push {lr}
     sub sp, sp, #4
-    mov r0, #20
-    push {r0}
-    bl f
-    pop {r0}
-    add sp, sp, #4
+    mov r0, #1
     str r0, [sp, #0]
+    ldr r0, [sp, #0]
+    cmp r0, #6
+    bne .L2
+.L3:
+    ldr r0, [sp, #0]
+    cmp r0, #8
+    beq .L1
+.L2:
+    ldr r0, [sp, #0]
+    cmp r0, #1
+    bne .L4
+.L5:
+    ldr r0, [sp, #0]
+    cmp r0, #1
+    beq .L1
+.L4:
+    ldr r0, [sp, #0]
+    cmp r0, #3
+    bne .L0
+.L1:
+    mov r0, #3
+    str r0, [sp, #0]
+.L0:
     ldr r0, [sp, #0]
     push {r0}
     bl print
@@ -67,4 +41,4 @@ main:
     add sp, sp, #4
     pop {pc}
 
-//cost 0.177000ms.
+//cost 0.173000ms.

@@ -1,14 +1,10 @@
 void print(int n);
 int getint();
 void newline();
-int a=100;
-int f(int n){
-    if(n==1||n==2) return 1;
-    else return f(n-1)+f(n-2);
-}
 void main()
 {
-    int a=f(20);
+    int a=1;
+    if(a==6&&a==8||a==1&&a==1||a==3) a=3;
     print(a);
     newline();
     return;

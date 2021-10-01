@@ -675,28 +675,32 @@ void temp_code(sync_node* n){
                 if(n->child[1]->empty) temp_code(n->child[0]);
                 if(!n->child[1]->empty){
                     int t=lab_index;
-                    lable_table[lab_index++]=NULL;
+                    char* a=get_lab_name();
                     lable_table[lab_index++]=lable_table[t-1];
                     temp_code(n->child[0]);
+                    q_table[q_index].op=LABLE;
+                    q_table[q_index++].args1=a;
                     lab_index=t;
+                    temp_code(n->child[1]);
+                }
+                break;
+            case LOREXP1:
+                if(n->child[2]->empty) {
+                    int t=lab_index;
                     lable_table[lab_index++]=lable_table[t-2];
                     lable_table[lab_index++]=NULL;
                     temp_code(n->child[1]);
                     lab_index=t;
                 }
-                break;
-            case LOREXP1:
-                if(n->child[2]->empty) temp_code(n->child[1]);
                 if(!n->child[2]->empty){
                     int t=lab_index;
-                    lable_table[lab_index++]=NULL;
+                    char* a=get_lab_name();
                     lable_table[lab_index++]=lable_table[t-1];
                     temp_code(n->child[1]);
+                    q_table[q_index].op=LABLE;
+                    q_table[q_index++].args1=a;
                     lab_index=t;
-                    lable_table[lab_index++]=lable_table[t-2];
-                    lable_table[lab_index++]=NULL;
                     temp_code(n->child[2]);
-                    lab_index=t;
                 }
                 break;
             case LANDEXP:
@@ -704,13 +708,31 @@ void temp_code(sync_node* n){
                 if(!n->child[1]->empty){
                     int t=lab_index;
                     lable_table[lab_index++]=lable_table[t-2];
-                    lable_table[lab_index++]=NULL;
+                    char* a=get_lab_name();
                     temp_code(n->child[0]);
+                    q_table[q_index].op=LABLE;
+                    q_table[q_index++].args1=a;
                     lab_index=t;
-                    lable_table[lab_index++]=lable_table[t-2];
+                    temp_code(n->child[1]);
+                }
+                break;
+            case LANDEXP1:
+                if(n->child[2]->empty) {
+                    int t=lab_index;
                     lable_table[lab_index++]=NULL;
+                    lable_table[lab_index++]=lable_table[t-1];
                     temp_code(n->child[1]);
                     lab_index=t;
+                }
+                if(!n->child[2]->empty){
+                    int t=lab_index;
+                    lable_table[lab_index++]=lable_table[t-2];
+                    char* a=get_lab_name();
+                    temp_code(n->child[1]);
+                    q_table[q_index].op=LABLE;
+                    q_table[q_index++].args1=a;
+                    lab_index=t;
+                    temp_code(n->child[2]);
                 }
                 break;
             case RELEXP:
@@ -896,20 +918,6 @@ void temp_code(sync_node* n){
                         q_table[q_index++].args1=lable_table[lab_index-1];
                         temp_index-=2;
                     }
-                }
-                break;
-            case LANDEXP1:
-                if(n->child[2]->empty) temp_code(n->child[1]);
-                if(!n->child[2]->empty){
-                    int t=lab_index;
-                    lable_table[lab_index++]=lable_table[t-2];
-                    lable_table[lab_index++]=NULL;
-                    temp_code(n->child[1]);
-                    lab_index=t;
-                    lable_table[lab_index++]=lable_table[t-2];
-                    lable_table[lab_index++]=NULL;
-                    temp_code(n->child[2]);
-                    lab_index=t;
                 }
                 break;
             case RELEXP1:
@@ -1272,15 +1280,15 @@ void temp_code(sync_node* n){
                     break;
                 }
                 if(n->child[0]->tk.type==BREAK){
-                    if(lab_index!=0&&lab_index-2*is_if-2>-1){
-                        q_table[q_index].args1=lable_table[lab_index-2*is_if-2];
+                    if(lab_index!=0&&lab_index-is_if-2>-1){
+                        q_table[q_index].args1=lable_table[lab_index-is_if-2];
                         q_table[q_index++].op=JMP;
                     }
                     break;
                 }
                 if(n->child[0]->tk.type==CONTINUE){
-                    if(lab_index!=0&&lab_index-2*is_if-3>-1){
-                        q_table[q_index].args1=lable_table[lab_index-2*is_if-3];
+                    if(lab_index!=0&&lab_index-is_if-3>-1){
+                        q_table[q_index].args1=lable_table[lab_index-is_if-3];
                         q_table[q_index++].op=JMP;
                     }
                     break;
@@ -1365,23 +1373,33 @@ void temp_code(sync_node* n){
                     temp_index-=2;
                 }
                 if(n->child[0]->tk.type==IF){
-                    is_if++;
+                    int tif=is_if;
+                    int li=lab_index;
+                    is_if+=2;
+                    char* c;
+                    if(!n->child[5]->empty){
+                        c=get_lab_name();
+                        is_if+=1;
+                    }
                     char* a=get_lab_name();
                     char* b=get_lab_name();
-                    char* c=get_lab_name();
                     temp_code(n->child[2]);
                     q_table[q_index].op=LABLE;
                     q_table[q_index++].args1=b;
                     temp_code(n->child[4]);
-                    q_table[q_index].op=JMP;
-                    q_table[q_index++].args1=c;
+                    if(!n->child[5]->empty){
+                        q_table[q_index].op=JMP;
+                        q_table[q_index++].args1=c;
+                    }
                     q_table[q_index].op=LABLE;
                     q_table[q_index++].args1=a;
-                    if(!n->child[5]->empty) temp_code(n->child[5]->child[1]);
-                    q_table[q_index].op=LABLE;
-                    q_table[q_index++].args1=c;
-                    lab_index-=2;
-                    is_if--;
+                    if(!n->child[5]->empty){ 
+                        temp_code(n->child[5]->child[1]);
+                        q_table[q_index].op=LABLE;
+                        q_table[q_index++].args1=c;
+                    }
+                    lab_index=li;
+                    is_if=tif;
                 }
                 if(n->child[0]->tk.type==WHILE){
                     char* c=get_lab_name();
